@@ -294,7 +294,7 @@ public class AttendanceReportSingleUserControllerModal {
                             long shiftInTimeInSeconds = Integer.parseInt(shiftInTime.split(":")[0]) * 60 * 60 + Integer.parseInt(shiftInTime.split(":")[1]) * 60;
                             long shiftOutTimeInSeconds = Integer.parseInt(shiftOutTime.split(":")[0]) * 60 * 60 + Integer.parseInt(shiftOutTime.split(":")[1]) * 60;
 
-                            String OT = "";
+                            String OT = "00:00:00";
                             String status = "In";
 
                             String earlyBy = "00:00:00";
@@ -308,7 +308,6 @@ public class AttendanceReportSingleUserControllerModal {
                                 lateBy = df.format(new Date(Math.abs(inTimeInseconds - shiftInTimeInSeconds) * 1000)).toString().substring(11, 19);
                             }
 
-                            
                             // Late mark
                             if (inTimeInseconds > shiftInTimeInSeconds) {
                                 if ((inTimeInseconds - shiftInTimeInSeconds) / 60 > 15) {
@@ -325,11 +324,7 @@ public class AttendanceReportSingleUserControllerModal {
                             if (!status.equals("In")) {
                                 if (Math.abs(outTimeInseconds - inTimeInseconds) > Math.abs(shiftOutTimeInSeconds - shiftInTimeInSeconds)) {
                                     OT = df.format(new Date(Math.abs((outTimeInseconds - inTimeInseconds) - (shiftOutTimeInSeconds - shiftInTimeInSeconds)) * 1000)).toString().substring(11, 19);
-                                } else {
-                                    OT = "00:00:00";
                                 }
-                            } else {
-                                OT = "00:00:00";
                             }
 
                             // Half day full day status
@@ -345,7 +340,7 @@ public class AttendanceReportSingleUserControllerModal {
                                     fullDayCount++;
                                 }
                             }
-                            
+
                             String inRemoteLocation = "";
                             String outRemoteLocation = "";
                             if (inPunch.getString("type") == "Remote" || inPunch.getString("type") == "Attendance Regularization") {
