@@ -93,11 +93,11 @@ public class AttendanceRequestModal {
                 String seniorLevel1 = getLastSeniorId(user.get("attendance_senior_level_I"));
                 // Get senior details
                 Document seniorData = getUserDetails.getUserDetails(seniorLevel1, database);
-                
+
                 AttendanceRequestDao dao = new AttendanceRequestDao();
                 ObjectId response = dao.insertRemotePunch(user, getCurrentDateMillis(), seniorLevel1, attendanceRequestDto, address);
                 if (response != null) {
-                    sendNotification(seniorData.getString("token_id"));
+                    sendNotification(seniorData.getString("token_id"),user.getString("full_name"));
                     json.addProperty("status", "OK");
                     json.addProperty("message", "Punched successfully");
                     json.addProperty("key", response.toString());
@@ -141,7 +141,7 @@ public class AttendanceRequestModal {
                     if (timestamp >= currentMonthTwentyOne) {
                         ObjectId response = dao.insertRegularizationPunch(user, getCurrentDateMillis(), seniorLevel1, attendanceRequestDto);
                         if (response != null) {
-                            sendNotification(seniorData.getString("token_id"));
+                            sendNotification(seniorData.getString("token_id"),user.getString("full_name"));
                             json.addProperty("status", "OK");
                             json.addProperty("message", "Punched successfully");
                             json.addProperty("key", response.toString());
@@ -157,7 +157,7 @@ public class AttendanceRequestModal {
                     if (timestamp >= previousMonthTwentyOne) {
                         ObjectId response = dao.insertRegularizationPunch(user, getCurrentDateMillis(), seniorLevel1, attendanceRequestDto);
                         if (response != null) {
-                            sendNotification(seniorData.getString("token_id"));
+                            sendNotification(seniorData.getString("token_id"),user.getString("full_name"));
                             json.addProperty("status", "OK");
                             json.addProperty("message", "Punched successfully");
                             json.addProperty("key", response.toString());
@@ -253,17 +253,17 @@ public class AttendanceRequestModal {
         return dateMillis;
     }
 
-    public void sendNotification(String seniorToken) {
+    public void sendNotification(String seniorToken,String userName) {
         try {
             JsonObject json = new JsonObject();
             json.addProperty("to", seniorToken);
             json.addProperty("collapse_key", "type_a");
 
             JsonObject notificationBody = new JsonObject();
-            notificationBody.addProperty("body", "Body of Your Notification");
-            notificationBody.addProperty("title", "Title of Your Notification");
+            notificationBody.addProperty("body", "New approval request by "+userName);
+            notificationBody.addProperty("title", "New approval request by "+userName);
 
-            json.add("body", notificationBody);
+            json.add("data", notificationBody);
 
             HttpResponse<String> response = Unirest.post("https://fcm.googleapis.com/fcm/send")
                     .header("Authorization", "key= AIzaSyDPCiE4_KysqE2necy9dokclU9ocINEsSw")
@@ -271,7 +271,6 @@ public class AttendanceRequestModal {
                     .header("cache-control", "no-cache")
                     .body(json.toString())
                     .asString();
-            System.out.println(response.getStatusText());
         } catch (UnirestException ex) {
             System.out.println(ex);
         }

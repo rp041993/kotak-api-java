@@ -137,13 +137,9 @@ public class AttendanceRequestDao {
             }
 
             MongoCollection userCollection = database.getCollection("users");
-//            
-//            Document updateField = new Document();
-//            updateField.append("regularizationCount", regularizationCount);
-//            Document setQuery = new Document("$set", updateField);
+
             userCollection.updateOne(eq("onboard_id", user.getString("onboard_id")),
                     new Document("$set", new Document("regularizationCount", regularizationCount)));
-//            userCollection.updateOne(setQuery, userDoc, new UpdateOptions().upsert(false));
         } catch (Exception e) {
             System.out.println(e);
         }
