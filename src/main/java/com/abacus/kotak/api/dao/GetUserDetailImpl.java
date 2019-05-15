@@ -42,10 +42,21 @@ public class GetUserDetailImpl implements GetUserDetails {
     }
 
     @Override
-    public Document getUserDetails(String uid) {
-        
+    public Document getUserDetails(String uid, MongoDatabase database) {
+        Document iterDoc = null;
+        try {
+            MongoCollection collection = database.getCollection("users");
+            Document doc = new Document("onboard_id", uid);
+
+            Bson sort = ascending("timestamp");
+            iterDoc = (Document) collection.find(doc).first();
+
+        } catch (Exception e) {
+            System.out.println(e);
+        }
+        return iterDoc;
     }
-    
+
     public String checkLastOtpExistTime(String employeeId, long date) {
         String otp = "";
         MongoDatabase database = UserLogin.database;

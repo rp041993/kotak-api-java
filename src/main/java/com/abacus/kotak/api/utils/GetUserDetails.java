@@ -5,6 +5,7 @@
  */
 package com.abacus.kotak.api.utils;
 
+import com.mongodb.client.MongoDatabase;
 import org.bson.Document;
 
 /**
@@ -14,6 +15,7 @@ import org.bson.Document;
 public interface GetUserDetails {
 
     String checkEmployeeEmailExists(String email);
+
+    Document getUserDetails(String uid, MongoDatabase database);
     
-    Document getUserDetails(String uid);
 }
