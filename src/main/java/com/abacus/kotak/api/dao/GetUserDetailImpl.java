@@ -33,7 +33,7 @@ public class GetUserDetailImpl implements GetUserDetails {
             Bson sort = ascending("timestamp");
             Document iterDoc = (Document) collection.find(doc).first();
             if (iterDoc != null) {
-                userId = iterDoc.getString("_id");
+                userId = iterDoc.getString("key");
             }
         } catch (Exception e) {
             System.out.println(e);
@@ -46,7 +46,7 @@ public class GetUserDetailImpl implements GetUserDetails {
         Document iterDoc = null;
         try {
             MongoCollection collection = database.getCollection("users");
-            Document doc = new Document("onboard_id", uid);
+            Document doc = new Document("key", uid);
 
             Bson sort = ascending("timestamp");
             iterDoc = (Document) collection.find(doc).first();
@@ -62,7 +62,7 @@ public class GetUserDetailImpl implements GetUserDetails {
         MongoDatabase database = UserLogin.database;
         try {
             MongoCollection collection = database.getCollection("otp_data");
-            Document doc = new Document("_id", employeeId)
+            Document doc = new Document("key", employeeId)
                     .append("time", date);
 
             Document iterDoc = (Document) collection.find(doc).first();
@@ -79,9 +79,9 @@ public class GetUserDetailImpl implements GetUserDetails {
         MongoDatabase database = UserLogin.database;
         try {
             MongoCollection collection = database.getCollection("otp_data");
-            Document doc = new Document("_id", id);
+            Document doc = new Document("key", id);
             Document updateField = new Document();
-            updateField.append("_id", id);
+            updateField.append("key", id);
             updateField.append("otp", otp);
             updateField.append("time", time);
             updateField.append("email", email);
@@ -103,7 +103,7 @@ public class GetUserDetailImpl implements GetUserDetails {
 
             Document iterDoc = (Document) collection.find(doc).first();
             if (iterDoc != null) {
-                uid = iterDoc.getString("_id");
+                uid = iterDoc.getString("key");
             }
         } catch (Exception e) {
             System.out.println(e);

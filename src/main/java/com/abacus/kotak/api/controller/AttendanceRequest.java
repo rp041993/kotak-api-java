@@ -120,4 +120,34 @@ public class AttendanceRequest {
                 .build();
     }
 
+    @Path("short-break")
+    @POST
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response shortBreakPunch(InputStream incomingData) {
+
+        JsonObject returnObject = new JsonObject();
+        database = createConnection();
+        try {
+            Convert convertObj = new Convert();
+            JSONObject incomingDataJSONObject = convertObj.covertInputStreamToJsonObject(incomingData);
+
+            // set value into pojo class
+            AttendanceRequestDto attendanceRequestDto = new AttendanceRequestDto();
+            attendanceRequestDto.setIncomingObject(incomingDataJSONObject);
+
+            AttendanceRequestModal modalObj = new AttendanceRequestModal();
+            returnObject = modalObj.pushShortBreakPunch(attendanceRequestDto);
+        } catch (Exception e) {
+            System.out.println(e);
+        } finally {
+            closeConnection();
+        }
+
+        return Response
+                .status(200)
+                .entity(returnObject.toString())
+                .build();
+    }
+
 }

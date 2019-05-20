@@ -13,7 +13,7 @@ public class Credentails {
 
 //    Database Credential
     private final String UserName = "kefOnboard";
-    private final String Password = "nl&9_G%v!$b1G6n";
+    private final String Password = "sacC2p7rFaLj";
     private final String DBName = "Migration";
     private final String Host = "142.93.210.143";
 

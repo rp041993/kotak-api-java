@@ -7,6 +7,8 @@ package com.abacus.kotak.api.service;
 
 import com.abacus.kotak.api.dao.AttendanceReportSingleUserControllerDao;
 import com.abacus.kotak.api.bean.AttendanceReportSingleUserControllerDto;
+import com.abacus.kotak.api.controller.AttendanceReportSingleUserController;
+import com.abacus.kotak.api.dao.GetShiftDetailImpl;
 import com.google.gson.JsonObject;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -62,6 +64,7 @@ public class AttendanceReportSingleUserControllerModal {
     public static HashMap<String, HashMap<Long, HashMap<String, ArrayList<Document>>>> genratePunchMap(Iterator punchIterator) {
 
         HashMap<String, HashMap<Long, HashMap<String, ArrayList<Document>>>> map = new HashMap<>();
+
         while (punchIterator.hasNext()) {
             try {
                 Document doc = (Document) punchIterator.next();
@@ -170,13 +173,13 @@ public class AttendanceReportSingleUserControllerModal {
     }
 
     private static void IterateMap(HashMap<String, HashMap<Long, HashMap<String, ArrayList<Document>>>> map, AttendanceReportSingleUserControllerDto reportDto) {
-
         int lateMark = 0;
 
         AttendanceReportSingleUserControllerDao daoObj = new AttendanceReportSingleUserControllerDao();
 
+        GetShiftDetailImpl getShiftDetailImpl = new GetShiftDetailImpl();
         //Get Shifts
-        HashMap<String, JSONObject> shifts = daoObj.getShifts();
+        HashMap<String, JSONObject> shifts = getShiftDetailImpl.getShifts(AttendanceReportSingleUserController.database);
 
         //Get HolidayList
         ArrayList holidayList = daoObj.getHolidays();
@@ -197,13 +200,13 @@ public class AttendanceReportSingleUserControllerModal {
             AttendanceReportSingleUserControllerDao reportDao = new AttendanceReportSingleUserControllerDao();
             Document userDetails = reportDao.getUserDetails(userNode.getKey());
             //  Push User details into punch array
-            pushUserObject("Name", userDetails.getString("full_name"), "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "");
-            pushUserObject("Intervention", userDetails.getString("intervention"), "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "");
-            pushUserObject("Emp-Id", userDetails.getString("emp_id"), "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "");
-            pushUserObject("", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "");
+            pushUserObject("Name", userDetails.getString("full_name"), "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "");
+            pushUserObject("Intervention", userDetails.getString("intervention"), "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "");
+            pushUserObject("Emp-Id", userDetails.getString("emp_id"), "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "");
+            pushUserObject("", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "");
 
             //get user_shift_mapping
-            Document userShiftDetails = reportDao.getUserShiftDetails(userNode.getKey());
+            Document userShiftDetails = getShiftDetailImpl.getUserShiftDetails(userNode.getKey(), AttendanceReportSingleUserController.database);
 
             TimeZone tz = TimeZone.getTimeZone("UTC");
             DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'000Z'");
@@ -223,7 +226,8 @@ public class AttendanceReportSingleUserControllerModal {
             int lateMarkCount = 0;
             int specialLeaveCount = 0;
             int shortBreakCount = 0;
-
+            int maternityLeaveCount = 0;
+            int paternityLeaveCount = 0;
             //  {dateMillis : {"leave":[{},{}] , "punch": [{},{}], satOff:[{},{}] }}}
             //Iterate for sorting punch 
             for (Long date : dateRange) {
@@ -242,13 +246,13 @@ public class AttendanceReportSingleUserControllerModal {
                     // Absent
                     if (dayName.equals("Sun")) {
                         weeklyOffCount++;
-                        pushUserObject(d, dayName, "Weekly Off", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "");
+                        pushUserObject(d, dayName, "Weekly Off", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "");
                     } else if (holidayList.contains(date)) {
                         holidayCount++;
-                        pushUserObject(d, dayName, "Holiday", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "");
+                        pushUserObject(d, dayName, "Holiday", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "");
                     } else {
                         absentCount++;
-                        pushUserObject(d, dayName, "Absent", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "");
+                        pushUserObject(d, dayName, "Absent", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "");
                     }
                 } else {
                     HashMap<String, ArrayList<Document>> allRecordMap = userNodeObject.get(date);
@@ -260,6 +264,7 @@ public class AttendanceReportSingleUserControllerModal {
                             // getShiftData
                             JSONObject shiftDetails = getShiftDetails(userShiftDetails, date, shifts);
                             ArrayList<Document> punchArray = allRecordMap.get("punch");
+
                             String shortBreakTime = "";
                             String shortBreakReason = "";
                             String shortBreakStatus = "";
@@ -353,7 +358,7 @@ public class AttendanceReportSingleUserControllerModal {
                             pushUserObject(d, dayName, "Present", inPunch.get("time").toString(),
                                     outPunch.get("time").toString(), totalHours, status, inPunch.get("type").toString(), inRemoteLocation,
                                     outPunch.get("type").toString(), outRemoteLocation, shiftName, shiftInTime, shiftOutTime, lateBy,
-                                    earlyBy, OT, shortBreakStatus, shortBreakTime, shortBreakReason, workingStatus);
+                                    earlyBy, OT, shortBreakStatus, shortBreakTime, shortBreakReason, workingStatus, "");
 
                         } catch (Exception e) {
                             System.out.println(e);
@@ -361,6 +366,7 @@ public class AttendanceReportSingleUserControllerModal {
                     } // Leave
                     else {
                         String status = "";
+                        String leaveType = "";
                         if (dayName.equals("Sun")) {
                             weeklyOffCount++;
                             status = "Weekly Off";
@@ -384,6 +390,18 @@ public class AttendanceReportSingleUserControllerModal {
                                 } else if (leaveObject.getString("leave_type").equalsIgnoreCase("Special Leave")) {
                                     specialLeaveCount++;
                                     status = "Special Leave";
+                                } else if (leaveObject.getString("leave_type").equalsIgnoreCase("Maternity Leave")) {
+                                    maternityLeaveCount++;
+                                    status = "Maternity Leave";
+                                } else if (leaveObject.getString("leave_type").equalsIgnoreCase("Paternity Leave")) {
+                                    paternityLeaveCount++;
+                                    status = "Paternity Leave";
+                                }
+
+                                if (!status.equals("")) {
+                                    if (leaveObject.containsKey("day_type")) {
+                                        leaveType = leaveObject.getString("day_type");
+                                    }
                                 }
                             } // Satoff
                             else if (allRecordMap.containsKey("satOff")) {
@@ -393,7 +411,7 @@ public class AttendanceReportSingleUserControllerModal {
                             }
                         }
 
-                        pushUserObject(d, dayName, status, "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "");
+                        pushUserObject(d, dayName, status, "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", leaveType);
                     }
                 }
             }
@@ -401,20 +419,20 @@ public class AttendanceReportSingleUserControllerModal {
             // Add PL CSL .... Count
             pushUserObject("PL", String.valueOf(plCount), "", "", "CSL", String.valueOf(cslCount),
                     "", "", "Comp-Off", String.valueOf(compOffCount), "", "", "Weekly-Off", String.valueOf(weeklyOffCount),
-                    "", "", "Holiday", String.valueOf(holidayCount), "", "", "");
+                    "", "", "Holiday", String.valueOf(holidayCount), "", "", "", "");
 
             pushUserObject("Sat-Off", String.valueOf(SatOffCount), "", "", "Present", String.valueOf(presentCount),
                     "", "", "Absent", String.valueOf(absentCount), "", "", "Late-Mark", String.valueOf(lateMarkCount),
-                    "", "", "Special-leave", String.valueOf(specialLeaveCount), "", "", "");
+                    "", "", "Special-leave", String.valueOf(specialLeaveCount), "", "", "", "");
 
             pushUserObject("Shortbreak", String.valueOf(shortBreakCount), "", "", "Half-Day", String.valueOf(halfDayCount),
-                    "", "", "Full-Day", String.valueOf(fullDayCount), "", "", "", "",
-                    "", "", "", "", "", "", "");
+                    "", "", "Full-Day", String.valueOf(fullDayCount), "", "", "Maternity", String.valueOf(maternityLeaveCount),
+                    "", "", "Paternity", String.valueOf(paternityLeaveCount), "", "", "", "");
 
             // Push Blank Object
-            pushUserObject("", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "");
+            pushUserObject("", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "");
 
-            pushUserObject("", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "");
+            pushUserObject("", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "");
 
         }
     }
@@ -437,6 +455,7 @@ public class AttendanceReportSingleUserControllerModal {
     }
 
     private static JSONObject getShiftDetails(Document shiftObject, Long date, HashMap<String, JSONObject> shifts) {
+
         JSONObject shiftResponseData = new JSONObject();
         try {
             if (shiftObject != null) {
@@ -491,7 +510,7 @@ public class AttendanceReportSingleUserControllerModal {
     private static void pushUserObject(String date, String day, String status, String inTime, String outTime,
             String total, String attendenceStatus, String inAttendenceType, String inAttendenceLocation, String out_attendance_type,
             String out_attendance_location, String shiftName, String shiftInTime, String shiftOutTime, String lateBy, String earlyBy, String OT,
-            String shortBreakStatus, String shortBreakTime, String shortBreakReason, String attendanceStatus) {
+            String shortBreakStatus, String shortBreakTime, String shortBreakReason, String attendanceStatus, String leaveType) {
 
         JsonObject blankObject = new JsonObject();
         blankObject.addProperty("date", date);
@@ -515,6 +534,7 @@ public class AttendanceReportSingleUserControllerModal {
         blankObject.addProperty("shortBreakTime", shortBreakTime);
         blankObject.addProperty("shortBreakReason", shortBreakReason);
         blankObject.addProperty("attendanceStatus", attendanceStatus);
+        blankObject.addProperty("leaveType", leaveType);
         PunchDetails.add(blankObject);
     }
 
